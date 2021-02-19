@@ -1,0 +1,64 @@
+#include <stdio.h>
+#include <string.h>
+#include <WinSock2.h>
+#include <stdint.h>
+#pragma comment(lib,"Ws2_32.lib")
+
+
+
+int main()
+{
+#ifdef WIN32
+    //initializezi windows socket  library
+    WSADATA wsaData;
+
+    if (WSAStartup(MAKEWORD(2, 2),&wsaData) < 0)
+    {
+        printf("Error initializing the Windows Sockets Library!\n");
+        return -1;
+    }
+#endif
+    int socket_descriptor;
+    struct sockaddr_in server;
+
+    socket_descriptor=socket(AF_INET, SOCK_STREAM, 0);//creezi un socket nou
+
+    if(socket_descriptor < 0)
+    {
+        printf("Error creating client socket!\n");
+        return 1;
+    }
+
+    memset(&server,0,sizeof(server));//initializezi spatiul de memorie al serverului
+    server.sin_port=htons(1234);//setezi portul
+    server.sin_family=AF_INET;
+    server.sin_addr.s_addr=inet_addr("192.168.100.13");//adresa serverului
+
+    if(connect(socket_descriptor, (struct sockaddr *) &server, sizeof(server)) < 0)
+    {
+        printf("Error connecting to server!\n");
+        return 1;
+    }
+
+    size_t a;
+    char b[1000];
+
+    printf("Type in the string:\n");
+    fgets(b,sizeof(b),stdin);
+    //printf("%s\n",b);
+    a=strlen(b);
+
+    a=htonl(a);//aranjeaza bytes-i ca sa-i trimita serverului
+    send(socket_descriptor, &a, sizeof(a), 0);//trimite lungimea sirului serverului
+
+    a=ntohl(a);//aranjeaza bytes-i inapoi
+    send(socket_descriptor, b, a, 0);//trimite sirul b serverului
+
+    memset(b,0,a);//initializeaza sirul b cu valoarea 0
+    recv(socket_descriptor, b, a, 0);//citeste sirul b de lungime a de la server
+
+    printf("%s\n",b);
+
+    closesocket(socket_descriptor);
+
+}

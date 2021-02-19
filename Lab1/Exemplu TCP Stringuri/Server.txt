@@ -1,0 +1,92 @@
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <stdio.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+void reverse(char* str)
+{
+    size_t n=strlen(str);
+    size_t mid=n/2;
+
+    for(size_t i=0;i<=mid;i++)
+    {
+        char aux=str[i];
+        str[i]=str[n-1-i];
+        str[n-1-i]=aux;
+
+    }
+
+}
+
+
+
+int main()
+
+{
+
+    char* host_name=(char*)malloc(100*sizeof(char));
+    gethostname(host_name,sizeof(host_name));
+    printf("%s\n",host_name);
+
+    int sock;
+    struct sockaddr_in server,client;
+    int socket_descriptor,l;
+
+    sock=socket(AF_INET,SOCK_STREAM,0);//creaza un nou socket
+    if(sock<0)
+    {
+        printf("Error connecting to socket. \n");
+        return 1;
+    }
+
+    memset(&server,0,sizeof(server));//initializeaza spatiul de memorie al serverului
+    server.sin_port=htons(1234);//portul serverului
+    server.sin_family=AF_INET;
+    server.sin_addr.s_addr=INADDR_ANY;//adresa serverului
+
+    if (bind(sock,(struct  sockaddr*)&server,sizeof(server))<0)//da serverului socketul sock
+    {
+        printf("This port is already in use!\n");
+        return 1;
+    }
+
+    listen(sock,5);//pregateste sa accepte conexiuni pt socketul sock
+
+    l=sizeof(client);
+
+    memset(&client,0,sizeof(client));//initializeaza spatiul de memorie al clientului
+
+    while(1)
+    {
+        size_t a;//marimea sirului
+        char* b;//sirul
+        printf("Waiting clients...\n");
+        socket_descriptor=accept(sock, (struct sockaddr*) &client, &l);//descriptorul socketului
+        printf("A client has connected!\n");
+
+        recv(socket_descriptor, &a, sizeof(a), 0);//citeste sizeof(a) bytes din socketul socket_descriptor in a
+        a=ntohl(a);//ordoneaza bytes-i cum trebuie
+
+        b=(char*)malloc(1000);
+        recv(socket_descriptor, b, a, 0);//citeste sirul din socket
+        //printf("%s\n",b);
+        reverse(b);
+        //printf("%s\n",b);
+
+        send(socket_descriptor, b, a, 0);//trimite a bytes ai lui b catre socketul socket_descriptor
+        printf("Client has been served!\n");
+
+        close(socket_descriptor);
+
+
+    }
+
+
+    return 0;
+
+}
+

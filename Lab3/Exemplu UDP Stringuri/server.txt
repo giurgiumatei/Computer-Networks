@@ -1,0 +1,85 @@
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <stdio.h>
+#include <netinet//in.h>
+#include <netinet/ip.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#define MAX_LENGTH 1000
+
+void reverse(char* str)
+{
+    size_t n=strlen(str);
+    size_t mid=n/2;
+
+    for(size_t i=0;i<=mid;i++)
+    {
+        char aux=str[i];
+        str[i]=str[n-1-i];
+        str[n-1-i]=aux;
+
+    }
+
+
+}
+
+
+
+int main()
+{
+
+    char* host_name=(char*)malloc(100*sizeof(char));
+    gethostname(host_name,sizeof(host_name));
+    printf("%s\n",host_name);
+
+
+    int sock;
+    struct sockaddr_in server,client;
+    int length;
+
+    sock=socket(AF_INET,SOCK_DGRAM,0);
+    if(sock<0)
+    {
+        printf("Error creating socket!\n");
+        return 1;
+    }
+
+    memset(&server,0,sizeof(server));
+    server.sin_port=htons(1234);
+    server.sin_family=AF_INET;
+    server.sin_addr.s_addr=INADDR_ANY;
+
+    if(bind(sock,(struct sockaddr*) &server,sizeof(server))<0)
+    {
+        printf("Bind error!");
+        return 1;
+
+    }
+
+    length=sizeof(client);
+    memset(&client,0,sizeof(client));
+
+    while(1)
+    {
+        char string[MAX_LENGTH];
+        memset(string,0,sizeof(MAX_LENGTH));
+
+        recvfrom(sock,string,sizeof(char)* MAX_LENGTH,0,(struct sockaddr_in*) &client,&length);
+        printf("original string: %s\n",string);
+
+        int string_length=strlen(string);
+
+        reverse((char *) string);
+
+        printf("reversed string: %s\n",string);
+        sendto(sock,string,sizeof(char)* string_length,0,(struct sockaddr*) &client,sizeof(server));
+
+
+
+    }
+
+    close(sock);
+    return 0;
+
+}
